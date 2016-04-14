@@ -4,7 +4,9 @@ var turf = require('turf');
 module.exports = function(tileLayers, tile, writeData, done) {
   var layer = tileLayers.osm.osm;
   var result = layer.features.filter(function(obj) {
-    if (obj.properties['name:ja'] && (obj.geometry.type === 'LineString' || obj.geometry.type === 'MultiLineString')) {
+    // if (obj.properties['name:ja'] && obj.geometry.type === 'Point') {
+    // if (obj.properties['name:ja'] && (obj.geometry.type === 'LineString' || obj.geometry.type === 'MultiLineString')) {
+    if (obj.properties['name:ja'] && obj.geometry.type === 'Polygon') {
       var props = {
         "name": obj.properties['name:ja']
       };
