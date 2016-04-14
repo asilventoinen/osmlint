@@ -4,9 +4,9 @@ var turf = require('turf');
 module.exports = function(tileLayers, tile, writeData, done) {
   var layer = tileLayers.osm.osm;
   var result = layer.features.filter(function(obj) {
-    if (obj.properties['name:ja']) {
+    if (obj.properties['name:ja'] && obj.geometry.type === 'Point') {
       var props = {
-        "name:ja": obj.properties['name:ja']
+        "name": obj.properties['name:ja']
       };
       obj.properties = props;
       return true;
