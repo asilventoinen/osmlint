@@ -1,12 +1,16 @@
 'use strict';
-var time = require('time')(Date);
 var turf = require('turf');
-
-// Filter by japannes labels
+// Filter by name:ja
 module.exports = function(tileLayers, tile, writeData, done) {
   var layer = tileLayers.osm.osm;
   var result = layer.features.filter(function(obj) {
-    return (obj.properties.name_ja);
+    if (obj.properties['name:ja']) {
+      var props = {
+        "name:ja": obj.properties['name:ja']
+      };
+      obj.properties = props;
+      return true;
+    }
   });
 
   if (result.length > 0) {
