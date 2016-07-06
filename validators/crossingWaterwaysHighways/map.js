@@ -98,30 +98,32 @@ module.exports = function(tileLayers, tile, writeData, done) {
     var overlaphighwaysBbox = highwaysTree.search(waterBbox);
     for (var k = 0; k < overlaphighwaysBbox.length; k++) {
       var overlapHigBbox = overlaphighwaysBbox[k];
-      var intersect = turf.intersect(highways[overlapHigBbox[4]], waterways[waterBbox[4]]);
-      if (intersect) {
-        var props = {
-          _fromWay: highways[overlapHigBbox[4]].properties['@id'],
-          _toWay: waterways[waterBbox[4]].properties['@id'],
-          _osmlint: osmlint,
-          _type: classification(majorRoads, minorRoads, pathRoads, highways[overlapHigBbox[4]].properties.highway)
-        };
-        intersect.properties = props;
-        highways[overlapHigBbox[4]].properties._osmlint = osmlint;
-        waterways[waterBbox[4]].properties._osmlint = osmlint;
-        output[overlapHigBbox[4]] = highways[overlapHigBbox[4]];
-        output[waterBbox[4]] = waterways[waterBbox[4]];
-        if (intersect.geometry.type === 'MultiPoint') {
-          var coord = intersect.geometry.coordinates;
-          for (var l = 0; l < coord.length; l++) {
-            if (!fords[coord[l].join(',')]) {
-              var point = turf.point(coord[l]);
-              point.properties = props;
-              output[waterBbox[4] + overlapHigBbox[4] + l] = point;
+      if (isIntersecting(highways[overlapHigBbox[4]], waterways[waterBbox[4]])) {
+        var intersect = turf.intersect(highways[overlapHigBbox[4]], waterways[waterBbox[4]]);
+        if (intersect) {
+          var props = {
+            _fromWay: highways[overlapHigBbox[4]].properties['@id'],
+            _toWay: waterways[waterBbox[4]].properties['@id'],
+            _osmlint: osmlint,
+            _type: classification(majorRoads, minorRoads, pathRoads, highways[overlapHigBbox[4]].properties.highway)
+          };
+          intersect.properties = props;
+          highways[overlapHigBbox[4]].properties._osmlint = osmlint;
+          waterways[waterBbox[4]].properties._osmlint = osmlint;
+          output[overlapHigBbox[4]] = highways[overlapHigBbox[4]];
+          output[waterBbox[4]] = waterways[waterBbox[4]];
+          if (intersect.geometry.type === 'MultiPoint') {
+            var coord = intersect.geometry.coordinates;
+            for (var l = 0; l < coord.length; l++) {
+              if (!fords[coord[l].join(',')]) {
+                var point = turf.point(coord[l]);
+                point.properties = props;
+                output[waterBbox[4] + overlapHigBbox[4] + l] = point;
+              }
             }
+          } else if (intersect.geometry.type === 'Point' && !fords[intersect.geometry.coordinates.join(',')]) {
+            output[waterBbox[4] + overlapHigBbox[4]] = intersect;
           }
-        } else if (intersect.geometry.type === 'Point' && !fords[intersect.geometry.coordinates.join(',')]) {
-          output[waterBbox[4] + overlapHigBbox[4]] = intersect;
         }
       }
     }
@@ -145,4 +147,24 @@ function classification(major, minor, path, highway) {
   } else if (path[highway]) {
     return 'path';
   }
+}
+
+function isIntersecting(highway, waterway) {
+  var coord1 = highway.geometry.coordinates;
+  var coord2 = waterway.geometry.coordinates;
+  var x1 = coord1[0][0];
+  var y1 = coord1[0][1];
+  var x2 = coord1[coord1.length - 1][0];
+  var y2 = coord1[coord1.length - 1][1];
+  var x3 = coord2[0][0];
+  var y3 = coord2[0][1];
+  var x4 = coord2[coord2.length - 1][0];
+  var y4 = coord2[coord2.length - 1][1];
+  var adx = x2 - x1;
+  var ady = y2 - y1;
+  var bdx = x4 - x3;
+  var bdy = y4 - y3;
+  var s = (-ady * (x1 - x3) + adx * (y1 - y3)) / (-bdx * ady + adx * bdy);
+  var t = (+bdx * (y1 - y3) - bdy * (x1 - x3)) / (-bdx * ady + adx * bdy);
+  return (s >= 0 && s <= 1 && t >= 0 && t <= 1);
 }
